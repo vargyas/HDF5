@@ -1,0 +1,148 @@
+This is a configuration file for gem-foil analysis.At the moment this is all
+very experimental, but the basic principle is to have the name of a variable
+enclosed in the funny brackets and after that the contents delimited by space and/or
+end-of-line. Numbers are automatically detected. Floats are identified by a dot. Everything else is saved as a string. White space is ignored.
+A single entry can be forced as a list by appending [] to the end.
+
+Everything before first variable declaration is considered to be an introduction and saved as a single string.
+
+#Commenting is done with a dash
+
+For wavy Bernd foils
+
+<<version>>=0.7
+<<fileExt>>=.tif
+#<<overlap>>=170 110
+<<overlap>>=100 65
+
+<<processes>>=.4		# how big fraction of available threads is given to preprocess, rest goes to postprocess
+				# the division can make a big difference on recipes where either one uses a lot of
+				# processing time
+
+
+# These are for preprocessing phase and are related to peak-search etc.
+<<colorspace>>=0                 # colorspace: 0=RGB, 1=HSV
+<<gradientThreshold>>=15
+<<peaks>>=copper background               #peaks are listed in the order from left to right. Not used atm.(12.2.2013)
+<<peakThreshold>>=0 70 120 220	        #these are values of the valleys (length=peaks+1). Have to span from 0 to 255.Not used atm.(12.2.2013)
+<<peakArea>>=0.8 0.2 0.25        #these are target relative areas of the peaks. Not used atm.(4.4.2012) Really (22.1.2013)?
+                                            #used to combine peaks if more are found than expected
+<<peakSigma>>=1                  # gaussian smoothing to peak search histogram. This breaks down if processing mini-images.
+<<errorThreshold>>=0.3	        #the largest allowed sum of squared error on the peak area fit. Not used atm.(4.4.2012)
+<<peakChannel>>=1		        #Channel used in histogram analysis (bgr) and in masking!
+<<smoothThreshold>>=1 1     #brightness threshold for masking. If [0,0] then adaptive blurring is used. A list with lower
+                            # and higher thresholds (for > lower and < higher oprations. FUll image is masked
+                            # if the numbers are the same
+                                            
+<<blurLow>>=0			            #0=None, other=(idx of peak blurred)+1, if smoothThreshold = 0. Otherwise this is
+<<blurHigh>>=1                      #just a boolean using the threshold value
+<<feather>>=30                      #not used anymore (15.4.2013)
+<<coi>>=1			                #channel processed for postprocess
+<<mopen>>=0                                         #bool, whether to perform morphological closing
+<<mopenkernel>>=5                                #size of the kernel
+<<calibrate>>=0                          #correction for the optics, boolean
+<<deblur>>=0                             #apply deblur to the channel of interest, boolean
+<<gamma>>=0.45
+
+#<<smoothingAlgo>>=cv2.bilateralFilter
+#<<smoothingVars>>=0 0 10. 3.
+<<smoothingAlgo>>=median
+<<smoothingVars>>=3 []
+#<<smoothingAlgo>>=erode                     
+#<<smoothingVars>>=3 5                       #kernel and iterations
+#<<smoothingAlgo>>=threshold
+#<<smoothingType>>=None
+#<<smoothingVars>>=1 1 0. 0.
+#<<smoothingAlgo>>=null_filter           # no filtering at all
+#<<smoothingVars>>=3 -1                  # these don't matter
+#<<smoothingAlgo>>=multiply2           # .
+#<<smoothingVars>>=1. 5. 3.5 0  	    # strength, sigma unsharp sigmamask, openingiter
+#<<smoothingAlgo>>=unsharp          # unsharp mask 
+#<<smoothingAlgo>>=unsharp3          # unsharp mask 
+#<<smoothingVars>>=2.0 10. 3.5 4. 0  6      # strength, sigmaUnsharp,sigmaMask, sigmaBlur openingIterations, grow
+#<<smoothingAlgo>>=cv2.pyrMeanShiftFiltering
+#<<smoothingVars>>=3. 5.
+
+# These are for edgedet-class and control the segmentation and analysis
+# Algorithms are functions available in cvtools namespace (includes cv and cv2)
+
+<<edgeAlgo>>=cv2.Canny
+
+
+#<<edgeVars>>=300. 400. edges 5 True		#lower and higher threshold and the aperture for canny detector
+<<edgeVars>>=70. 130. edges 3 True		#lower and higher threshold and the aperture for canny detector
+
+#<<edgeAlgo>>=npcanny
+#<<edgeVars>>=0.5 0.5 edges 3              #edges is the contour image
+                                                    
+#<<globalMAlgo>>=mclose
+<<globalMAlgo>>=null_filter
+
+<<globalMVars>>=1 []
+
+<<localMAlgo>>=null_filter
+#<<localMAlgo>>=fillHoles  #local morphological operation applied to bounding box of a single object. 
+<<localMVars>>= 1 2 
+
+<<padding>>=7                       #amount of pixels to grow bounding box by
+
+# The command to extract moments for neural network. Six different moments are put to data.
+#<<moments>>=GetHuMoments #Not in use atm 22.1.2013
+
+# minimum perimeter of the feature to take it into account.
+<<minSize>>=40
+<<maxSize>>=100000
+
+# Here are listed all the analyses on a found edge there is. In dataMask there should be
+# ones on those that are saved with data and on netmask on those that are sent to neural
+# network. Zeros on all others, of course.
+# 0: x			         These have to be found from dataMask to stitch!
+# 1: y			         These have to be found from dataMask to stitch!
+# 2: bb x		         These have to be found from dataMask to stitch!
+# 3: bb y		         These have to be found from dataMask to stitch!
+# 4: bb width		     These have to be found from dataMask to stitch!
+# 5: bb height		     These have to be found from dataMask to stitch!
+# 6: area                The area of the fitted ellipse
+# 7: diameter		      Average of the ellipse axes atm.
+# 8: perimColour B
+# 9: perimColour G
+#10: perimColour R
+#11: ellipse angle
+#12: moment 1
+#13: moment 2
+#14: moment 3
+#15: moment 4
+#16: moment 5
+#17: moment 6
+#18: ellipse big axis		
+#19: ellipse small axis		
+#20: bb Colour B			
+#21: bb Colour G			
+#22: bb Colour R			
+#23: bool: 0=background, 1=foreground
+
+<<netMask>>=0 0 0 0 1  1 1 1 0 0  0 1 1 1 1  1 1 1 1 1  1 1 1
+<<dataMask>>=1 1 1 1 1  1 1 1 1 1  1 1 1 1 1  1 1 1 1 1  1 1 1
+
+# Next set of variables define the neural network
+<<classifications>>=5
+<<hidden>>=2    #number of hidden layers
+<<extra>>=30	#number of extra nodes in hidden layer
+<<classNames>>=rubbish inner outer defect badhole
+<<savedClasses>>=1 2 3
+<<savedImages>>=3 []# -1 is to force into a list
+<<trainsample>>=0.5 # division between train and validation sample
+<<trainThreshold>>=0.25
+<<verbosity>>=1 #not used anymore
+
+# Stitching variables come here..
+<<stitch>>=1
+<<oldStyle>>=0   # Whether the stitching is done from data (old style) or from image
+<<stitchFunc>>=stitch2
+<<margin>>=18 18  # width of search area margin within overlap. In x,y. 
+<<remove>>=0        # a boolean. Whether tio remove _post files or not
+
+# Variables for postprocessing:
+<<resolution>>=1.729
+
+
