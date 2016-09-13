@@ -30,35 +30,39 @@ def convert_dict_nparray(dictionary, key):
             tmp_array = list()
             for line in dictionary[key]:
                 line = tuple(line)
-                tmp_array.append( line )
+                # only keep x, y, area, diameter
+                sliceObj = slice(0, 1, 6, 7) 
+                tmp_array.append( line[sliceObj] )
+            
             
             # create a named list which will be directly
             # converted to a TTree object
             my_array = np.array( tmp_array, 
                     dtype=[('x',np.float64),
                         ('y',np.float64),
-                        ('bb_x',np.float64),
-                        ('bb_y',np.float64),
-                        ('bb_width',np.float64),
-                        ('bb_height',np.float64),
+#                        ('bb_x',np.float64),
+#                        ('bb_y',np.float64),
+#                        ('bb_width',np.float64),
+#                        ('bb_height',np.float64),
                         ('area',np.float64),
                         ('diameter',np.float64),
-                        ('perimColour_B',np.float64),
-                        ('perimColour_G',np.float64),
-                        ('perimColour_R',np.float64),
-                        ('ellipse_angle',np.float64),
-                        ('moment_1',np.float64),
-                        ('moment_2',np.float64),
-                        ('moment_3',np.float64),
-                        ('moment_4',np.float64),
-                        ('moment_5',np.float64),
-                        ('moment_6',np.float64),
-                        ('ellipse_big_axis',np.float64),
-                        ('ellipse_small_axis',np.float64),
-                        ('bb_Colour_B',np.float64),
-                        ('bb_Colour_G',np.float64),
-                        ('bb_Colour_R',np.float64),
-                        ('bool_0=background_1=foreground',np.bool)] )
+#                        ('perimColour_B',np.float64),
+#                        ('perimColour_G',np.float64),
+#                        ('perimColour_R',np.float64),
+#                        ('ellipse_angle',np.float64),
+#                        ('moment_1',np.float64),
+#                        ('moment_2',np.float64),
+#                        ('moment_3',np.float64),
+#                        ('moment_4',np.float64),
+#                        ('moment_5',np.float64),
+#                        ('moment_6',np.float64),
+#                        ('ellipse_big_axis',np.float64),
+#                        ('ellipse_small_axis',np.float64),
+#                        ('bb_Colour_B',np.float64),
+#                        ('bb_Colour_G',np.float64),
+#                        ('bb_Colour_R',np.float64),
+#                        ('bool_0=background_1=foreground',np.bool)
+                        ] )
             return my_array
         except:
             print 'not valid key'
@@ -71,9 +75,12 @@ Load HDF5 files into dictionary
 def load_HDF5file_dict(infilename):
     h5file = tables.open_file(infilename, mode='r')
     data={} 
-    for idx,  group in enumerate(h5file.walk_groups()):
+    for idx, group in enumerate(h5file.walk_groups()):
         if idx>0:
             flavour=group._v_name
+            # only load inner and outer identifiers
+            if flavour!='inner' or flavour!='outer': 
+                continue
             data[flavour]=group.data.read()
     h5file.close()
     return data
@@ -84,31 +91,11 @@ M A I N   P R O G R A M
 """
 
 # Creating empty container for data (the ugly way)
-data_array = np.array( [(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)],
+data_array = np.array( [(0,0,0,0)],
                     dtype=[('x',np.float64),
                         ('y',np.float64),
-                        ('bb_x',np.float64),
-                        ('bb_y',np.float64),
-                        ('bb_width',np.float64),
-                        ('bb_height',np.float64),
                         ('area',np.float64),
-                        ('diameter',np.float64),
-                        ('perimColour_B',np.float64),
-                        ('perimColour_G',np.float64),
-                        ('perimColour_R',np.float64),
-                        ('ellipse_angle',np.float64),
-                        ('moment_1',np.float64),
-                        ('moment_2',np.float64),
-                        ('moment_3',np.float64),
-                        ('moment_4',np.float64),
-                        ('moment_5',np.float64),
-                        ('moment_6',np.float64),
-                        ('ellipse_big_axis',np.float64),
-                        ('ellipse_small_axis',np.float64),
-                        ('bb_Colour_B',np.float64),
-                        ('bb_Colour_G',np.float64),
-                        ('bb_Colour_R',np.float64),
-                        ('bool_0=background_1=foreground',np.bool)] )
+                        ('diameter',np.float64)] )
 
 # Loop over the chunks
 print '========================='
