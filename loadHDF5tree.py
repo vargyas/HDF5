@@ -31,9 +31,8 @@ def convert_dict_nparray(dictionary, key):
             for line in dictionary[key]:
                 line = tuple(line)
                 # only keep x, y, area, diameter
-                sliceObj = slice(0, 1, 6, 7) 
-                tmp_array.append( line[sliceObj] )
-            
+                #sliceObj = slice(0, 1, 6, 7) 
+                tmp_array.append( (line[0], line[1], line[6], line[7]) )
             
             # create a named list which will be directly
             # converted to a TTree object
@@ -79,9 +78,8 @@ def load_HDF5file_dict(infilename):
         if idx>0:
             flavour=group._v_name
             # only load inner and outer identifiers
-            if flavour!='inner' or flavour!='outer': 
-                continue
-            data[flavour]=group.data.read()
+            if flavour=='inner' or flavour=='outer': 
+                data[flavour]=group.data.read()
     h5file.close()
     return data
 
