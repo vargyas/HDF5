@@ -1,31 +1,32 @@
 ###
 ### This macro reads the neural network outputs of the optical scan.
-### Files are stored in HDF5 format, details are in ALICE3.recipe
-### Plots maps, distribution of area, diameter, ellipse axises, etc
+### Files are stored in HDF5 format, details are in ALICE3.recipe. It
+### reads them into a ROOT tree and saves them into a ROOT file.
 ###
+### Author: Vargyas, Marton
+### Email: mvargyas@cern.ch
+### 2016
 
 import numpy as np
 import h5py
 from ROOT import *
-import tables 
-import os
-import glob
+import tables, os, glob
+import sys
 
 from root_numpy import root2array, tree2array
 from root_numpy import array2tree, array2root
 from root_numpy.testdata import get_filepath
 
-"""
-Convert dictionary to names numpy array
-which will be converted into a TTree
-(names are according to ALICE3.recipe,
-with whitespaces replaced by "_")
-"""
+
 def convert_dict_nparray(dictionary, key):
+    """
+    Convert dictionary to named numpy array
+    which will be converted into a TTree
+    (names are according to ALICE3.recipe,
+    with whitespaces replaced by "_")
+    """
     while dictionary.has_key(key):
         try:
-            # print 'processing <<', key, '>> out of ', dictionary.keys()
-
             # convert np.ndarray (2D) into a list of tuples
             tmp_array = list()
             for line in dictionary[key]:
@@ -68,17 +69,18 @@ def convert_dict_nparray(dictionary, key):
             return -1
 
 
-"""
-Load HDF5 files into dictionary
-"""
+
 def load_HDF5file_dict(infilename):
+    """
+    Load HDF5 files into dictionary
+    """
     h5file = tables.open_file(infilename, mode='r')
     data={} 
     for idx, group in enumerate(h5file.walk_groups()):
         if idx>0:
             flavour=group._v_name
             # only load inner and outer identifiers
-            if flavour=='inner' or flavour=='outer': 
+            if flavour=='inner' or flavour=='outer' or flavour=='defect':
                 data[flavour]=group.data.read()
     h5file.close()
     return data
@@ -89,38 +91,66 @@ M A I N   P R O G R A M
 """
 
 # Creating empty container for data (the ugly way)
-data_array = np.array( [(0,0,0,0)],
+data_array_inner = np.array( [(0,0,0,0)],
+                    dtype=[('x',np.float64),
+                        ('y',np.float64),
+                        ('area',np.float64),
+                        ('diameter',np.float64)] )
+data_array_outer = np.array( [(0,0,0,0)],
+                    dtype=[('x',np.float64),
+                        ('y',np.float64),
+                        ('area',np.float64),
+                        ('diameter',np.float64)] )
+data_array_defect = np.array( [(0,0,0,0)],
                     dtype=[('x',np.float64),
                         ('y',np.float64),
                         ('area',np.float64),
                         ('diameter',np.float64)] )
 
+
 # Loop over the chunks
 print '========================='
 ifile = 0
-for ifilename in glob.iglob('./data2/*.h5'):
-#for ifilename in glob.iglob('./data2/Test_Image_objectdata_1_chunk-5-2.h5'):
-    print 'load file:', ifile,'/',len(glob.glob('./data2/*.h5')), ':', ifilename
+datadir = sys.argv[1]
+if len(sys.argv) > 2:
+    outname = sys.argv[2]
+
+for ifilename in glob.iglob('{}/*.h5'.format(datadir)):
+    print 'load file:', ifile,'/',len(glob.glob('./{}/*.h5'.format(datadir))), ':', ifilename
     # load HDF5 into a python dictionary
     data_dict = load_HDF5file_dict(ifilename)
     # convert that to named (structured) numpy array
-    data_array_tmp = convert_dict_nparray(data_dict, 'inner')
-    # merge that with the empty container defined outside of the loop
-    data_array = np.concatenate( (data_array_tmp, data_array), axis=0 ) 
-    ifile += 1
-print '========================='
+    data_array_tmp_inner = convert_dict_nparray(data_dict, 'inner')
+    data_array_tmp_outer = convert_dict_nparray(data_dict, 'outer')
+    data_array_tmp_defect = convert_dict_nparray(data_dict, 'defect')
 
+
+    # merge that with the empty container defined outside of the loop
+    data_array_inner = np.concatenate( (data_array_tmp_inner, data_array_inner), axis=0 )
+    data_array_outer = np.concatenate( (data_array_tmp_outer, data_array_outer), axis=0 )
+    data_array_defect = np.concatenate((data_array_tmp_defect, data_array_defect), axis=0)
+
+    ifile += 1
+    print '========================='
+
+outname = "outfile.root"
 # create a tree from the array
 print '\ncreate a tree from the array'
-tree = array2tree(data_array, name='inner_tree')
+treeInner = array2tree(data_array_inner, name='inner_tree')
+treeOuter = array2tree(data_array_outer, name='outer_tree')
+treeDefect = array2tree(data_array_defect, name='defect_tree')
 
 # merge the trees (takes some time)
 #tree = TTree.MergeTrees( tlist )
 
-print 'writing file'
-outFile = TFile('outfile.root', 'RECREATE')
+print 'writing file to:', outname
+outFile = TFile(os.path.join(datadir,outname), 'RECREATE')
 outFile.cd()
-tree.Write()
+
+treeInner.Write()
+treeOuter.Write()
+treeDefect.Write()
+
 outFile.Write()
 outFile.Close()
 
